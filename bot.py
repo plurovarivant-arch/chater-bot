@@ -1,6 +1,6 @@
 import logging
 import os
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     filters, ContextTypes, ConversationHandler
@@ -9,8 +9,8 @@ from telegram.ext import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВЬ_ТОКЕН_СЮДА")
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "ВСТАВЬ_СВОЙ_CHAT_ID"))
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
 TASKS = [
     {
@@ -55,8 +55,7 @@ TASKS = [
             "Описание аккаунта:\n"
             "_Молодая девушка, 23 года, лайфстайл блог, продаёт курс по уходу за собой. "
             "Тон — дружеский, немного дерзкий._\n\n"
-            "Напиши *3 разных сообщения* подписчику в этом стиле "
-            "(можешь сам придумать ситуацию для каждого).\n\n"
+            "Напиши *3 разных сообщения* подписчику в этом стиле.\n\n"
             "_Напиши все три ниже_ 👇"
         )
     },
@@ -96,8 +95,7 @@ async def got_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"Отлично, *{name}*! Начинаем 🚀\n\n"
-        "Читай задание внимательно и отвечай развёрнуто. "
-        "Удачи!",
+        "Читай задание внимательно и отвечай развёрнуто. Удачи!",
         parse_mode="Markdown"
     )
     return await send_task(update, context)
@@ -120,7 +118,6 @@ async def got_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "answer": answer
     })
 
-    # Шлём ответ себе
     await context.bot.send_message(
         chat_id=ADMIN_CHAT_ID,
         text=(
@@ -136,10 +133,7 @@ async def got_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_step = context.user_data["step"]
 
     if next_step < len(TASKS):
-        await update.message.reply_text(
-            "✅ Принято! Следующее задание:",
-            parse_mode="Markdown"
-        )
+        await update.message.reply_text("✅ Принято! Следующее задание:")
         return await send_task(update, context)
     else:
         return await finish(update, context)
@@ -147,9 +141,8 @@ async def got_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = context.user_data["name"]
-
-    # Итоговый отчёт себе
     answers = context.user_data["answers"]
+
     report = f"🏁 *Кандидат {name} завершил тест*\n\n"
     for i, a in enumerate(answers):
         report += f"*Задание {i+1}: {a['task']}*\n{a['answer']}\n\n"
@@ -162,17 +155,14 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"🎉 *{name}, ты прошёл тест!*\n\n"
-        "Все ответы отправлены на проверку. "
-        "Мы свяжемся с тобой в ближайшее время. Спасибо! 🙌",
+        "Все ответы отправлены на проверку. Мы свяжемся с тобой в ближайшее время. Спасибо! 🙌",
         parse_mode="Markdown"
     )
     return DONE
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Тест отменён. Напиши /start чтобы начать заново."
-    )
+    await update.message.reply_text("Тест отменён. Напиши /start чтобы начать заново.")
     return ConversationHandler.END
 
 
@@ -190,7 +180,7 @@ def main():
     )
 
     app.add_handler(conv)
-    app.run_polling()
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
